@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSP HIL + ASPICE 規劃</title>
+<style>
+:root {
+  --ivory:    #FAF9F5;
+  --white:    #FFFFFF;
+  --slate:    #141413;
+  --clay:     #D97757;
+  --olive:    #788C5D;
+  --rust:     #B04A3F;
+  --oat:      #E3DACC;
+  --gray-150: #F0EEE6;
+  --gray-300: #D1CFC5;
+  --gray-500: #87867F;
+  --gray-700: #3D3D3A;
+  --border:        1.5px solid var(--gray-300);
+  --radius-panel:  12px;
+  --radius-row:    8px;
+  --radius-pill:   999px;
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --accent-hil: #4A90D9;
+  --accent-aspice: #D97757;
+  --bg-dark: #1A1A2E;
+  --bg-card-dark: #16213E;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--ivory);
+  color: var(--gray-700);
+  font-family: var(--sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+html { scroll-behavior: smooth; }
+
+/* ─── NAV ─── */
+.topnav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--slate); color: #E8E6DF;
+  padding: 0 24px; height: 52px;
+  display: flex; align-items: center; gap: 24px;
+  font-size: 13px; overflow-x: auto;
+  white-space: nowrap;
+}
+.topnav a { color: var(--gray-300); text-decoration: none; font-family: var(--mono); padding: 4px 0; border-bottom: 2px solid transparent; transition: 0.15s; }
+.topnav a:hover { color: #fff; border-bottom-color: var(--clay); }
+.topnav .brand { font-family: var(--serif); font-size: 15px; color: #fff; letter-spacing: -0.01em; margin-right: 16px; }
+
+/* ─── PAGE ─── */
+.page { max-width: 1040px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* ─── HERO ─── */
+.hero {
+  padding: 48px 0 40px; text-align: center;
+}
+.hero h1 { font-family: var(--serif); font-size: 36px; font-weight: 500; letter-spacing: -0.01em; color: var(--slate); }
+.hero .sub { font-size: 16px; color: var(--gray-500); margin-top: 8px; max-width: 600px; margin-left: auto; margin-right: auto; }
+.hero .meta { font-family: var(--mono); font-size: 11px; color: var(--gray-500); margin-top: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+/* ─── TWO TRACK CARDS ─── */
+.two-track { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 32px 0; }
+.track-card { border-radius: var(--radius-panel); padding: 24px; position: relative; overflow: hidden; }
+.track-card.hil { background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); color: #E8E6DF; }
+.track-card.aspice { background: linear-gradient(135deg, #2D1B1B 0%, #3D2323 100%); color: #E8E6DF; }
+.track-card .badge { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(255,255,255,0.1); display: inline-block; padding: 3px 10px; border-radius: var(--radius-pill); margin-bottom: 12px; }
+.track-card.hil .badge { background: rgba(74,144,217,0.25); color: #7AB8F5; }
+.track-card.aspice .badge { background: rgba(217,119,87,0.25); color: #F5B89A; }
+.track-card h2 { font-family: var(--serif); font-size: 22px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 8px; }
+.track-card .goal { font-size: 13px; color: var(--gray-300); margin-bottom: 16px; line-height: 1.5; }
+.track-card ul { list-style: none; padding: 0; }
+.track-card li { font-size: 13px; padding: 4px 0 4px 16px; position: relative; color: var(--gray-300); }
+.track-card li::before { content: "→"; position: absolute; left: 0; color: var(--clay); }
+.track-card.hil li::before { color: var(--accent-hil); }
+
+/* ─── SECTION ─── */
+.section { margin-top: 48px; }
+.section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.section-header .num { font-family: var(--serif); font-size: 28px; color: var(--gray-300); font-weight: 500; line-height: 1; }
+.section-header h2 { font-family: var(--serif); font-size: 26px; font-weight: 500; letter-spacing: -0.01em; color: var(--slate); }
+.section-header .tag { font-family: var(--mono); font-size: 11px; background: var(--oat); padding: 2px 8px; border-radius: var(--radius-pill); color: var(--gray-500); }
+
+/* ─── 5-STEP FLOW ─── */
+.flow-steps { display: flex; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.step { flex: 1; min-width: 140px; background: var(--white); border: var(--border); border-radius: var(--radius-row); padding: 16px; text-align: center; position: relative; }
+.step .step-num { font-family: var(--mono); font-size: 11px; color: var(--gray-500); }
+.step .step-label { font-family: var(--serif); font-size: 14px; margin-top: 4px; color: var(--slate); }
+.step .step-desc { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+.step::after { content: "→"; position: absolute; right: -10px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--clay); }
+.step:last-child::after { display: none; }
+
+/* ─── CARDS GRID ─── */
+.resp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin: 16px 0; }
+.resp-card { background: var(--white); border: var(--border); border-radius: var(--radius-row); padding: 16px; }
+.resp-card .block { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--slate); }
+.resp-card .owner { display: inline-block; font-family: var(--mono); font-size: 10px; background: var(--clay); color: #fff; padding: 1px 7px; border-radius: 6px; margin-left: 6px; }
+.resp-card .task { font-size: 13px; color: var(--gray-500); margin-top: 4px; }
+
+/* ─── TEST GROUP ─── */
+.test-group { background: var(--white); border: var(--border); border-radius: var(--radius-panel); margin-bottom: 12px; overflow: hidden; }
+.test-group summary { padding: 14px 18px; cursor: pointer; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; }
+.test-group summary::-webkit-details-marker { color: var(--gray-500); }
+.test-group summary .count { font-family: var(--mono); font-size: 11px; color: var(--gray-500); margin-left: auto; background: var(--gray-150); padding: 1px 8px; border-radius: var(--radius-pill); }
+.test-group .tg-body { padding: 0 18px 14px; overflow-x: auto; }
+.test-group table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.test-group th { font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--gray-500); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--gray-300); }
+.test-group td { padding: 6px 8px; border-bottom: 1px solid var(--gray-150); }
+.test-group tr:last-child td { border-bottom: none; }
+
+/* ─── TIMELINE ─── */
+.timeline { position: relative; margin: 24px 0; padding-left: 28px; }
+.timeline::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--gray-300); }
+.tl-item { position: relative; margin-bottom: 28px; }
+.tl-item::before { content: ""; position: absolute; left: -24px; top: 6px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--clay); background: var(--white); }
+.tl-item.hil::before { border-color: var(--accent-hil); }
+.tl-item.aspice::before { border-color: var(--clay); }
+.tl-week { font-family: var(--mono); font-size: 11px; color: var(--gray-500); }
+.tl-title { font-family: var(--serif); font-size: 17px; font-weight: 500; color: var(--slate); }
+.tl-items { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.tl-items .hil-work, .tl-items .aspice-work { font-size: 13px; padding: 8px 12px; border-radius: var(--radius-row); }
+.tl-items .hil-work { background: rgba(74,144,217,0.08); border-left: 3px solid var(--accent-hil); }
+.tl-items .aspice-work { background: rgba(217,119,87,0.08); border-left: 3px solid var(--clay); }
+.tl-items ul { list-style: none; padding: 0; margin-top: 4px; }
+.tl-items li { font-size: 12px; padding: 2px 0 2px 14px; position: relative; color: var(--gray-500); }
+.tl-items li::before { content: "·"; position: absolute; left: 2px; color: var(--gray-500); }
+
+/* ─── PRIORITY LIST ─── */
+.prio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin: 16px 0; }
+.prio-card { background: var(--white); border: var(--border); border-radius: var(--radius-row); padding: 16px; display: flex; gap: 14px; align-items: flex-start; }
+.prio-num { font-family: var(--serif); font-size: 28px; color: var(--clay); font-weight: 500; line-height: 1; min-width: 32px; text-align: center; }
+.prio-body .prio-title { font-size: 14px; font-weight: 600; color: var(--slate); }
+.prio-body .prio-desc { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+
+/* ─── ASPICE TABLE ─── */
+.aspice-map { overflow-x: auto; margin: 16px 0; }
+.aspice-map table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--white); border-radius: var(--radius-panel); overflow: hidden; border: var(--border); }
+.aspice-map th { font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; background: var(--gray-150); padding: 10px 12px; text-align: left; color: var(--gray-500); }
+.aspice-map td { padding: 8px 12px; border-bottom: 1px solid var(--gray-150); }
+.aspice-map tr:last-child td { border-bottom: none; }
+
+/* ─── KPI GRID ─── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+.kpi-card { background: var(--white); border: var(--border); border-radius: var(--radius-row); padding: 16px; text-align: center; }
+.kpi-card .kpi-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--gray-500); }
+.kpi-card .kpi-icon { font-size: 24px; margin-bottom: 4px; }
+.kpi-card .kpi-desc { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+
+/* ─── CALLOUT ─── */
+.callout { background: rgba(217,119,87,0.06); border-left: 3px solid var(--clay); border-radius: var(--radius-row); padding: 14px 16px; margin: 16px 0; font-size: 13px; }
+.callout.blue { background: rgba(74,144,217,0.06); border-left-color: var(--accent-hil); }
+.callout.green { background: rgba(120,140,93,0.06); border-left-color: var(--olive); }
+
+/* ─── REPO TREE ─── */
+.repo-tree { background: var(--slate); color: #E8E6DF; border-radius: var(--radius-panel); padding: 20px 24px; font-family: var(--mono); font-size: 13px; line-height: 1.9; margin: 16px 0; overflow-x: auto; }
+.repo-tree .tree-dir { color: #7AB8F5; }
+.repo-tree .tree-file { color: #E8E6DF; }
+.repo-tree .tree-comment { color: var(--gray-500); font-style: italic; }
+
+/* ─── METADATA STRIP ─── */
+.meta-strip { display: flex; gap: 24px; flex-wrap: wrap; margin: 24px 0; padding: 16px 20px; background: var(--white); border: var(--border); border-radius: var(--radius-panel); }
+.meta-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.meta-item .label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; color: var(--gray-500); letter-spacing: 0.04em; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .two-track { grid-template-columns: 1fr; }
+  .tl-items { grid-template-columns: 1fr; }
+  .flow-steps { flex-direction: column; }
+  .step::after { display: none; }
+  .topnav { gap: 12px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav class="topnav">
+  <span class="brand">BSP HIL + ASPICE</span>
+  <a href="#strategy">Strategy</a>
+  <a href="#responsibility">Responsibility</a>
+  <a href="#hil">HIL Tests</a>
+  <a href="#timeline">Timeline</a>
+  <a href="#priority">Priority</a>
+  <a href="#aspice">ASPICE Map</a>
+  <a href="#kpi">KPI</a>
+  <a href="#repo">Repo</a>
+</nav>
+
+<div class="page">
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <h1>BSP / SDK Board Integration HIL<br>+ ASPICE SWE.5 / SYS.4 Evidence</h1>
+  <p class="sub">從 SDK bring-up 到有 HIL regression 與 ASPICE evidence 的 BSP integration process</p>
+  <p class="meta">12 週推進計畫 · 兩條主線同步進行</p>
+</div>
+
+<!-- ═══ TWO TRACK ═══ -->
+<div class="two-track" id="strategy">
+  <div class="track-card hil">
+    <span class="badge">主線 A</span>
+    <h2>🛠 HIL 實作</h2>
+    <p class="goal">先做出看得見的自動化測試成果，降低人工 bring-up / regression 成本。</p>
+    <ul>
+      <li>HIL MVP 測試平台</li>
+      <li>Smoke Test 第一階段</li>
+      <li>周邊 Integration HIL</li>
+      <li>Stress / Regression</li>
+    </ul>
+  </div>
+  <div class="track-card aspice">
+    <span class="badge">主線 B</span>
+    <h2>📋 ASPICE 證據與流程</h2>
+    <p class="goal">不要一開始陷入文件地獄，讓 HIL 測試結果逐步轉成 ASPICE 可稽核證據。</p>
+    <ul>
+      <li>Board Difference Matrix</li>
+      <li>SDK Reuse Inventory</li>
+      <li>Interface Control Document</li>
+      <li>Traceability Matrix</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══ 5-STEP STRATEGY ═══ -->
+<div class="section">
+  <div class="section-header">
+    <span class="num">01</span>
+    <h2>整體策略</h2>
+    <span class="tag">5 步驟</span>
+  </div>
+  <div class="flow-steps">
+    <div class="step">
+      <div class="step-num">Step 1</div>
+      <div class="step-label">Board Difference Matrix</div>
+      <div class="step-desc">釐清 reuse / modified / new</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 2</div>
+      <div class="step-label">HIL Smoke Test</div>
+      <div class="step-desc">boot / dmesg / device readiness</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 3</div>
+      <div class="step-label">Peripheral Integration HIL</div>
+      <div class="step-desc">touch / display / MCU / audio / GPS / USB / camera</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 4</div>
+      <div class="step-label">Stress / Regression HIL</div>
+      <div class="step-desc">cycle test / 24hr monitor / hotplug</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 5</div>
+      <div class="step-label">ASPICE Evidence Package</div>
+      <div class="step-desc">traceability · review · release gate</div>
+    </div>
+  </div>
+  <div class="callout blue">
+    <strong>HIL MVP 原則：</strong>不要追求完整產品情境全部自動化。先做出一套能證明 SDK/BSP 修改有效的自動化測試 — 每次 build image / 修改 DTS / 修改 driver / 修改 service 之後，HIL 可以自動回答板子能否開機、kernel 有無 panic、device 是否 ready、power cycle 是否穩定。
+  </div>
+</div>
+
+<!-- ═══ RESPONSIBILITY ═══ -->
+<div class="section" id="responsibility">
+  <div class="section-header">
+    <span class="num">02</span>
+    <h2>Block Diagram 責任歸屬</h2>
+    <span class="tag">Your Team</span>
+  </div>
+  <div class="resp-grid">
+    <div class="resp-card">
+      <div class="block">In-Vehicle Infotainment SoC / Sunplus SDK <span class="owner">Your Team</span></div>
+      <div class="task">SDK 導入、BSP adaptation、kernel/DTS/config/service 整合</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">MCU / Main Micro Controller <span class="owner" style="background:var(--olive);">MCU Team</span></div>
+      <div class="task">MCU firmware 由 MCU team 負責</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">SoC ↔ MCU 介面 <span class="owner" style="background:var(--gray-500);">共同責任</span></div>
+      <div class="task">Linux side UART/I2C/GPIO/service/protocol 驗證由你的小組負責</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">TFT / LVDS / Backlight / LED <span class="owner">Your Team + HW</span></div>
+      <div class="task">Linux display stack、panel timing、backlight control、LED 驗證</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">Touch Panel / GT9271 <span class="owner">Your Team</span></div>
+      <div class="task">I2C、IRQ、reset GPIO、input event、座標、suspend/resume 驗證</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">Audio Codec / I2S / DAC / Amp / Mic <span class="owner">Your Team + HW / Audio Owner</span></div>
+      <div class="task">ALSA、I2S、codec probe、audio path、mic path 驗證</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">GPS Module <span class="owner">Your Team</span></div>
+      <div class="task">UART、power enable、NMEA data、service 驗證</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">BT / WiFi Module <span class="owner">Your Team + RF/HW</span></div>
+      <div class="task">driver、SDIO/USB/UART interface、network interface 驗證</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">USB 1 / USB 2 <span class="owner">Your Team</span></div>
+      <div class="task">VBUS control、enumeration、hotplug、CP/AA path 驗證</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">Camera / CVBS / RWC / MVC / LWC <span class="owner">Your Team + AVM/System Owner</span></div>
+      <div class="task">camera signal detect、CVBS input、GPIO/UART trigger、畫面切換驗證</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">ACC / STRG_SW_B / Parking / Turn / Speed / Tel-Mute / Illumination <span class="owner">Your Team + MCU/HW</span></div>
+      <div class="task">Linux side signal mapping、GPIO/input event、MCU event 驗證</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">DDR / SPI Flash / Storage <span class="owner" style="background:var(--gray-500);">SDK Reuse + Your Team Validate</span></div>
+      <div class="task">boot、flash image、storage health、regression</div>
+    </div>
+    <div class="resp-card">
+      <div class="block">DAB+ / Radio / MFi / K-Line <span class="owner">視模組 Owner</span></div>
+      <div class="task">Linux interface readiness 與 integration test</div>
+    </div>
+  </div>
+  <div class="callout">
+    <strong>重點判斷：</strong>MCU firmware 不是你的小組負責，但 <strong>Linux/SoC 與 MCU、周邊、外部訊號之間的 integration</strong>，是你的小組需要留下驗證證據的範圍。綠色標示的 <strong>Change from Base Model</strong> 項目應列為第一優先。
+  </div>
+</div>
+
+<!-- ═══ HIL TESTS ═══ -->
+<div class="section" id="hil">
+  <div class="section-header">
+    <span class="num">03</span>
+    <h2>HIL Test Suite</h2>
+    <span class="tag">三大階段</span>
+  </div>
+
+  <!-- Smoke Test -->
+  <details class="test-group" open>
+    <summary>🔥 Smoke Test <span class="count">9 tests</span></summary>
+    <div class="tg-body">
+      <table>
+        <thead><tr><th>ID</th><th>測試項目</th><th>方法</th><th>Pass Criteria</th><th>ASPICE</th></tr></thead>
+        <tbody>
+          <tr><td>HIL-BOOT-001</td><td>Power-on boot</td><td>relay 上電 + serial log</td><td>指定時間內出現 login/system ready</td><td>SWE.5/6, SYS.4</td></tr>
+          <tr><td>HIL-BOOT-002</td><td>SSH alive</td><td>ping + SSH command</td><td>指定時間內可登入</td><td>SWE.5/6</td></tr>
+          <tr><td>HIL-LOG-001</td><td>kernel critical log scan</td><td>dmesg / serial log</td><td>無 panic/oops/hung task/probe fail</td><td>SWE.5/6</td></tr>
+          <tr><td>HIL-SVC-001</td><td>service status</td><td>systemctl --failed</td><td>關鍵 service active</td><td>SWE.5/6</td></tr>
+          <tr><td>HIL-DEV-001</td><td>device node readiness</td><td>/dev/input, /dev/video, /dev/snd, /sys/class</td><td>主要 device node 存在</td><td>SWE.5</td></tr>
+          <tr><td>HIL-I2C-001</td><td>I2C bus readiness</td><td>i2cdetect / driver log</td><td>預期 device address 可見</td><td>SWE.5, SYS.4</td></tr>
+          <tr><td>HIL-GPIO-001</td><td>GPIO basic state</td><td>sysfs/libgpiod/debugfs</td><td>GPIO active level 與預期一致</td><td>SWE.4/5, SYS.4</td></tr>
+          <tr><td>HIL-NET-001</td><td>Ethernet basic test</td><td>link up + ping</td><td>link up、ping pass</td><td>SWE.5/6</td></tr>
+          <tr><td>HIL-REG-001</td><td>10-cycle reboot smoke</td><td>warm reboot loop</td><td>10/10 成功，無 critical error</td><td>SWE.6, SYS.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- Display / Touch -->
+  <details class="test-group">
+    <summary>🖥 Display / Touch / Backlight <span class="count">8 tests</span></summary>
+    <div class="tg-body">
+      <table>
+        <thead><tr><th>ID</th><th>測試項目</th><th>Method</th><th>ASPICE</th></tr></thead>
+        <tbody>
+          <tr><td>HIL-DISP-001</td><td>LVDS/display device ready</td><td>DRM/fb/sysfs/dmesg check</td><td>SWE.5, SYS.4</td></tr>
+          <tr><td>HIL-DISP-002</td><td>TFT visible check</td><td>camera 拍螢幕</td><td>SYS.4, SYS.5</td></tr>
+          <tr><td>HIL-BL-001</td><td>backlight enable</td><td>BL_EN / sysfs brightness</td><td>SWE.5, SYS.4</td></tr>
+          <tr><td>HIL-BL-002</td><td>brightness level test</td><td>sysfs PWM + light sensor</td><td>SWE.5, SYS.4</td></tr>
+          <tr><td>HIL-LED-001</td><td>LED board control</td><td>SPI/UART/GPIO command</td><td>SWE.5, SYS.4</td></tr>
+          <tr><td>HIL-TP-001</td><td>touch I2C probe</td><td>dmesg / i2c check</td><td>SWE.4, SWE.5</td></tr>
+          <tr><td>HIL-TP-002</td><td>input event node</td><td>/dev/input/eventX</td><td>SWE.5</td></tr>
+          <tr><td>HIL-TP-005</td><td>suspend/resume recovery</td><td>sleep/resume 後測 event</td><td>SWE.6, SYS.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- MCU / Signals -->
+  <details class="test-group">
+    <summary>🔌 MCU Interface / Detection Signals <span class="count">9 tests</span></summary>
+    <div class="tg-body">
+      <table>
+        <thead><tr><th>ID</th><th>測試項目</th><th>Method</th><th>ASPICE</th></tr></thead>
+        <tbody>
+          <tr><td>HIL-MCU-001</td><td>MCU UART device ready</td><td>/dev/tty* + baudrate check</td><td>SWE.5</td></tr>
+          <tr><td>HIL-MCU-002</td><td>command-response</td><td>Linux service 發 command</td><td>SWE.5, SYS.4</td></tr>
+          <tr><td>HIL-MCU-003</td><td>MCU reset recovery</td><td>reset MCU 或 power cycle</td><td>SYS.4</td></tr>
+          <tr><td>HIL-SIG-001</td><td>ACC detection</td><td>relay 模擬 ACC</td><td>SYS.4, SYS.5</td></tr>
+          <tr><td>HIL-SIG-002</td><td>STRG_SW_B</td><td>GPIO/relay 模擬</td><td>SYS.4</td></tr>
+          <tr><td>HIL-SIG-003</td><td>Parking / turn / tel-mute</td><td>GPIO/MCU event 模擬</td><td>SYS.4</td></tr>
+          <tr><td>HIL-SIG-004</td><td>Speed / VSP</td><td>MCU command 模擬</td><td>SYS.4, SYS.5</td></tr>
+          <tr><td>HIL-SIG-005</td><td>MVC detection</td><td>GPIO/relay 模擬</td><td>SYS.4</td></tr>
+          <tr><td>HIL-TP-006</td><td>touch reset recovery</td><td>GPIO 或 driver reload</td><td>SWE.5, SYS.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- Audio -->
+  <details class="test-group">
+    <summary>🎵 Audio / Mic / I2S / DAC <span class="count">5 tests</span></summary>
+    <div class="tg-body">
+      <table>
+        <thead><tr><th>ID</th><th>測試項目</th><th>Method</th><th>ASPICE</th></tr></thead>
+        <tbody>
+          <tr><td>HIL-AUD-001</td><td>ALSA device ready</td><td>aplay -l, arecord -l</td><td>SWE.5, SWE.6</td></tr>
+          <tr><td>HIL-AUD-002</td><td>codec probe</td><td>dmesg / sysfs</td><td>SWE.5</td></tr>
+          <tr><td>HIL-AUD-003</td><td>I2S playback</td><td>播放 test tone</td><td>SYS.4</td></tr>
+          <tr><td>HIL-AUD-004</td><td>mic input</td><td>錄音或 loopback</td><td>SYS.4</td></tr>
+          <tr><td>HIL-AUD-005</td><td>reboot audio stability</td><td>reboot loop + audio check</td><td>SWE.6, SYS.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- GPS / USB / WiFi/BT -->
+  <details class="test-group">
+    <summary>📡 GPS / USB / WiFi / BT <span class="count">10 tests</span></summary>
+    <div class="tg-body">
+      <table>
+        <thead><tr><th>ID</th><th>測試項目</th><th>ASPICE</th></tr></thead>
+        <tbody>
+          <tr><td>HIL-GPS-001</td><td>GPS UART ready</td><td>SWE.5</td></tr>
+          <tr><td>HIL-GPS-002</td><td>NMEA data receive</td><td>SWE.5, SYS.4</td></tr>
+          <tr><td>HIL-GPS-004</td><td>GPS service check</td><td>SWE.6</td></tr>
+          <tr><td>HIL-USB-001</td><td>USB host enumerate</td><td>SWE.5, SYS.4</td></tr>
+          <tr><td>HIL-USB-002</td><td>USB storage mount</td><td>SWE.6, SYS.4</td></tr>
+          <tr><td>HIL-USB-003</td><td>USB hotplug stress</td><td>SWE.6, SYS.4</td></tr>
+          <tr><td>HIL-WIFI-001</td><td>WiFi driver probe</td><td>SWE.5</td></tr>
+          <tr><td>HIL-WIFI-002</td><td>AP scan/connect</td><td>SWE.6, SYS.4</td></tr>
+          <tr><td>HIL-BT-001</td><td>BT controller ready</td><td>SWE.5</td></tr>
+          <tr><td>HIL-BT-002</td><td>BT pair/connect</td><td>SYS.4, SYS.5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- Camera -->
+  <details class="test-group">
+    <summary>📷 Camera / CVBS / RWC / MVC / LWC <span class="count">6 tests</span></summary>
+    <div class="tg-body">
+      <table>
+        <thead><tr><th>ID</th><th>測試項目</th><th>ASPICE</th></tr></thead>
+        <tbody>
+          <tr><td>HIL-CAM-001</td><td>camera detect GPIO</td><td>SYS.4</td></tr>
+          <tr><td>HIL-CAM-002</td><td>CVBS input ready</td><td>SWE.5, SYS.4</td></tr>
+          <tr><td>HIL-CAM-003</td><td>RWC/MVC video path</td><td>SYS.4, SYS.5</td></tr>
+          <tr><td>HIL-CAM-004</td><td>LWC video path</td><td>SYS.4</td></tr>
+          <tr><td>HIL-CAM-005</td><td>camera missing handling</td><td>SYS.5</td></tr>
+          <tr><td>HIL-AVM-001</td><td>reverse/MVC trigger</td><td>SYS.4, SYS.5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- Stress -->
+  <details class="test-group">
+    <summary>⚡ Stress / Regression <span class="count">10 tests</span></summary>
+    <div class="tg-body">
+      <table>
+        <thead><tr><th>ID</th><th>測試項目</th><th>建議次數</th><th>目的</th></tr></thead>
+        <tbody>
+          <tr><td>HIL-STR-001</td><td>cold boot cycle</td><td>30 → 100</td><td>抓 boot race condition</td></tr>
+          <tr><td>HIL-STR-002</td><td>warm reboot cycle</td><td>30 → 100</td><td>driver reload / init issue</td></tr>
+          <tr><td>HIL-STR-003</td><td>ACC ON/OFF cycle</td><td>30 → 100</td><td>驗證車機電源狀態</td></tr>
+          <tr><td>HIL-STR-004</td><td>suspend/resume cycle</td><td>30 → 100</td><td>驗證 power management</td></tr>
+          <tr><td>HIL-STR-005</td><td>USB hotplug stress</td><td>50 → 200</td><td>USB 穩定性</td></tr>
+          <tr><td>HIL-STR-006</td><td>touch reset stress</td><td>30 → 100</td><td>touch recovery</td></tr>
+          <tr><td>HIL-STR-007</td><td>display on/off stress</td><td>30 → 100</td><td>panel/backlight 穩定</td></tr>
+          <tr><td>HIL-STR-008</td><td>camera trigger stress</td><td>30 → 100</td><td>RWC/MVC/LWC 切換</td></tr>
+          <tr><td>HIL-STR-009</td><td>24hr idle log monitor</td><td>24 小時</td><td>memory leak / kernel warning</td></tr>
+          <tr><td>HIL-STR-010</td><td>audio playback long run</td><td>8 → 24 小時</td><td>audio path 穩定性</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+</div>
+
+<!-- ═══ 12-WEEK TIMELINE ═══ -->
+<div class="section" id="timeline">
+  <div class="section-header">
+    <span class="num">04</span>
+    <h2>12 週推進計畫</h2>
+    <span class="tag">HIL + ASPICE 同步</span>
+  </div>
+
+  <div class="timeline">
+    <!-- W1-2 -->
+    <div class="tl-item">
+      <div class="tl-week">Week 1–2</div>
+      <div class="tl-title">盤點與 HIL MVP 準備</div>
+      <div class="tl-items">
+        <div class="hil-work">
+          <strong>HIL</strong>
+          <ul>
+            <li>確認 DUT board、SDK image、flash method</li>
+            <li>接好 USB-UART、Ethernet、relay</li>
+            <li>建立 HIL controller repo</li>
+            <li>serial log collector + SSH executor</li>
+            <li>dmesg scanner + 最小報告</li>
+          </ul>
+        </div>
+        <div class="aspice-work">
+          <strong>ASPICE</strong>
+          <ul>
+            <li>Board Difference Matrix 初版</li>
+            <li>SDK Reuse Inventory 初版</li>
+            <li>owner matrix：BSP/MCU/HW/App/QA</li>
+            <li>確認 Change from Base Model 項目</li>
+            <li>定義前 10 個 HIL test case</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout green" style="margin-top:8px;font-size:12px;">
+        ✅ 週末展示：DUT 上電 → 自動收 log → 判斷 boot pass/fail → 產生 report
+      </div>
+    </div>
+
+    <!-- W3-4 -->
+    <div class="tl-item">
+      <div class="tl-week">Week 3–4</div>
+      <div class="tl-title">完成 HIL Smoke Suite</div>
+      <div class="tl-items">
+        <div class="hil-work">
+          <strong>HIL</strong>
+          <ul>
+            <li>HIL-BOOT-001 / 002</li>
+            <li>HIL-LOG-001 / SVC-001 / DEV-001</li>
+            <li>HIL-I2C-001 / GPIO-001 / NET-001</li>
+            <li>10-cycle reboot regression</li>
+          </ul>
+        </div>
+        <div class="aspice-work">
+          <strong>ASPICE</strong>
+          <ul>
+            <li>BSP/SDK software requirement 初版</li>
+            <li>HIL Test Specification template</li>
+            <li>HIL Test Report template</li>
+            <li>SUP.8 version record template</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout green" style="margin-top:8px;font-size:12px;">
+        ✅ SDK image 每次修改後可自動跑 smoke test — 第一個明確成效
+      </div>
+    </div>
+
+    <!-- W5-8 -->
+    <div class="tl-item">
+      <div class="tl-week">Week 5–8</div>
+      <div class="tl-title">高風險周邊 HIL</div>
+      <div class="tl-items">
+        <div class="hil-work">
+          <strong>HIL</strong>
+          <ul>
+            <li>Touch Panel</li>
+            <li>TFT / LVDS / Backlight</li>
+            <li>MCU UART / detection signals</li>
+            <li>GPS UART / Audio I2S / codec</li>
+            <li>USB hotplug / Camera detect</li>
+          </ul>
+        </div>
+        <div class="aspice-work">
+          <strong>ASPICE</strong>
+          <ul>
+            <li>SoC-MCU ICD</li>
+            <li>Display/Touch ICD</li>
+            <li>Camera ICD · Audio ICD · Power/ACC ICD</li>
+            <li>Modified/New 項目補 design note</li>
+            <li>建立 traceability matrix</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout green" style="margin-top:8px;font-size:12px;">
+        ✅ 不只是開機測試 — touch/display/MCU/GPS/audio/USB/camera 都有自動化整合測試
+      </div>
+    </div>
+
+    <!-- W9-12 -->
+    <div class="tl-item">
+      <div class="tl-week">Week 9–12</div>
+      <div class="tl-title">Stress / Regression / Release Gate</div>
+      <div class="tl-items">
+        <div class="hil-work">
+          <strong>HIL</strong>
+          <ul>
+            <li>30-cycle cold boot / reboot / ACC on/off</li>
+            <li>suspend/resume cycle</li>
+            <li>USB hotplug / touch reset stress</li>
+            <li>camera trigger / 24hr idle log</li>
+          </ul>
+        </div>
+        <div class="aspice-work">
+          <strong>ASPICE</strong>
+          <ul>
+            <li>release gate checklist</li>
+            <li>regression pass/fail trend</li>
+            <li>defect workflow + HIL fail → issue</li>
+            <li>QA review HIL report + traceability</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout green" style="margin-top:8px;font-size:12px;">
+        ✅ 每個版本是否能 release，有 HIL regression report 和 ASPICE evidence 支撐
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TOP 10 PRIORITY ═══ -->
+<div class="section" id="priority">
+  <div class="section-header">
+    <span class="num">05</span>
+    <h2>最優先 10 項工作</h2>
+    <span class="tag">Backlog</span>
+  </div>
+  <div class="prio-grid">
+    <div class="prio-card"><div class="prio-num">1</div><div class="prio-body"><div class="prio-title">Board Difference Matrix</div><div class="prio-desc">明確 reuse / modified / new / owner / risk</div></div></div>
+    <div class="prio-card"><div class="prio-num">2</div><div class="prio-body"><div class="prio-title">HIL Controller MVP</div><div class="prio-desc">relay + serial + SSH + report</div></div></div>
+    <div class="prio-card"><div class="prio-num">3</div><div class="prio-body"><div class="prio-title">SDK Reuse Inventory</div><div class="prio-desc">SDK baseline 與修改範圍清楚</div></div></div>
+    <div class="prio-card"><div class="prio-num">4</div><div class="prio-body"><div class="prio-title">HIL Smoke Suite</div><div class="prio-desc">boot / dmesg / service / device readiness</div></div></div>
+    <div class="prio-card"><div class="prio-num">5</div><div class="prio-body"><div class="prio-title">Version Capture 機制</div><div class="prio-desc">SDK version / kernel hash / DTS hash / board rev</div></div></div>
+    <div class="prio-card"><div class="prio-num">6</div><div class="prio-body"><div class="prio-title">Touch HIL</div><div class="prio-desc">I2C / event / IRQ / reset / resume</div></div></div>
+    <div class="prio-card"><div class="prio-num">7</div><div class="prio-body"><div class="prio-title">Display / Backlight HIL</div><div class="prio-desc">LVDS / panel / BL_EN / brightness</div></div></div>
+    <div class="prio-card"><div class="prio-num">8</div><div class="prio-body"><div class="prio-title">SoC-MCU ICD + MCU HIL</div><div class="prio-desc">UART / event / timeout / recovery</div></div></div>
+    <div class="prio-card"><div class="prio-num">9</div><div class="prio-body"><div class="prio-title">30-Cycle Regression</div><div class="prio-desc">cold boot / reboot / ACC cycle</div></div></div>
+    <div class="prio-card"><div class="prio-num">10</div><div class="prio-body"><div class="prio-title">Traceability Matrix</div><div class="prio-desc">requirement ↔ test ↔ result ↔ issue</div></div></div>
+  </div>
+</div>
+
+<!-- ═══ ASPICE MAP ═══ -->
+<div class="section" id="aspice">
+  <div class="section-header">
+    <span class="num">06</span>
+    <h2>ASPICE 對應總表</h2>
+    <span class="tag">Evidence</span>
+  </div>
+  <div class="aspice-map">
+    <table>
+      <thead><tr><th>工作項目</th><th>ASPICE 對應</th><th>主要證據</th></tr></thead>
+      <tbody>
+        <tr><td>Board Difference Matrix</td><td>SWE.1 / SWE.2 / SWE.5 / SYS.4</td><td>board difference、impact analysis</td></tr>
+        <tr><td>SDK Reuse Inventory</td><td>SUP.8 / SWE.5 / SWE.6</td><td>SDK version、reuse decision、integration result</td></tr>
+        <tr><td>Interface Control Document</td><td>SYS.3 / SWE.2 / SWE.3</td><td>ICD、signal mapping、protocol</td></tr>
+        <tr><td>DTS / Driver / Config 修改</td><td>SWE.3 / SWE.4</td><td>design note、commit、review、unit test</td></tr>
+        <tr><td>HIL Smoke Test</td><td>SWE.5 / SWE.6</td><td>test case、test report、log</td></tr>
+        <tr><td>周邊 Integration HIL</td><td>SWE.5 / SYS.4</td><td>driver/device/interface test evidence</td></tr>
+        <tr><td>產品情境 HIL</td><td>SYS.4 / SYS.5</td><td>reverse/camera/audio/USB scenario</td></tr>
+        <tr><td>Stress / Regression</td><td>SWE.6 / SYS.4 / SYS.5</td><td>cycle test report、stability metrics</td></tr>
+        <tr><td>Issue Tracking</td><td>SUP.9</td><td>defect、root cause、fix verification</td></tr>
+        <tr><td>Change Control</td><td>SUP.10</td><td>change request、impact analysis、approval</td></tr>
+        <tr><td>Version Control</td><td>SUP.8</td><td>SDK/image/board/test script version</td></tr>
+        <tr><td>QA Review</td><td>SUP.1</td><td>review record、release gate checklist</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ KPI / REPO ═══ -->
+<div class="section" id="kpi">
+  <div class="section-header">
+    <span class="num">07</span>
+    <h2>成效指標 KPI</h2>
+    <span class="tag">Weekly Report</span>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-label">HIL test count</div><div class="kpi-desc">測項覆蓋逐步增加</div></div>
+    <div class="kpi-card"><div class="kpi-icon">✅</div><div class="kpi-label">Automated pass rate</div><div class="kpi-desc">看整體品質</div></div>
+    <div class="kpi-card"><div class="kpi-icon">⏱</div><div class="kpi-label">Manual test time reduced</div><div class="kpi-desc">顯示人工作業減少</div></div>
+    <div class="kpi-card"><div class="kpi-icon">🔄</div><div class="kpi-label">Boot cycle pass rate</div><div class="kpi-desc">看基本穩定性</div></div>
+    <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-label">Kernel critical errors</div><div class="kpi-desc">看底層問題</div></div>
+    <div class="kpi-card"><div class="kpi-icon">🔌</div><div class="kpi-label">Device readiness coverage</div><div class="kpi-desc">看周邊覆蓋率</div></div>
+    <div class="kpi-card"><div class="kpi-icon">🐛</div><div class="kpi-label">Regression defects found</div><div class="kpi-desc">HIL 有抓到問題</div></div>
+    <div class="kpi-card"><div class="kpi-icon">⚡</div><div class="kpi-label">Avg time to detect issue</div><div class="kpi-desc">除錯效率提升</div></div>
+    <div class="kpi-card"><div class="kpi-icon">📋</div><div class="kpi-label">Requirement-to-test coverage</div><div class="kpi-desc">ASPICE traceability</div></div>
+    <div class="kpi-card"><div class="kpi-icon">🔗</div><div class="kpi-label">Fail-to-issue linkage rate</div><div class="kpi-desc">SUP.9 落實</div></div>
+  </div>
+
+  <div class="callout blue" style="margin-top:16px;">
+    <strong>範例週報：</strong>HIL Smoke Suite — Total: 18 · Pass: 16 · Fail: 2 · Boot cycle: 30/30 · Touch ready: 30/30 · Display ready: 28/30 · Critical errors: 2 · New defects: 2 · Requirements covered: 12/35
+  </div>
+</div>
+
+<!-- ═══ REPO STRUCTURE ═══ -->
+<div class="section" id="repo">
+  <div class="section-header">
+    <span class="num">08</span>
+    <h2>建議 Repo 結構</h2>
+    <span class="tag">Project Layout</span>
+  </div>
+  <div class="repo-tree">
+    <span class="tree-dir">project-root/</span>
+    <br>├── <span class="tree-dir">hil/</span>
+    <br>│   ├── <span class="tree-file">tests/</span>
+    <br>│   │   ├── <span class="tree-file">test_boot.py</span>
+    <br>│   │   ├── <span class="tree-file">test_log_scan.py</span>
+    <br>│   │   ├── <span class="tree-file">test_touch.py</span>
+    <br>│   │   ├── <span class="tree-file">test_display.py</span>
+    <br>│   │   ├── <span class="tree-file">test_mcu.py</span>
+    <br>│   │   ├── <span class="tree-file">test_audio.py</span>
+    <br>│   │   ├── <span class="tree-file">test_gps.py</span>
+    <br>│   │   ├── <span class="tree-file">test_usb.py</span>
+    <br>│   │   ├── <span class="tree-file">test_camera.py</span>
+    <br>│   │   └── <span class="tree-file">test_stress.py</span>
+    <br>│   ├── <span class="tree-file">fixtures/</span>
+    <br>│   │   ├── <span class="tree-file">dut.py</span>
+    <br>│   │   ├── <span class="tree-file">relay.py</span>
+    <br>│   │   ├── <span class="tree-file">serial_logger.py</span>
+    <br>│   │   ├── <span class="tree-file">ssh_client.py</span>
+    <br>│   │   └── <span class="tree-file">report.py</span>
+    <br>│   ├── <span class="tree-file">config/</span>
+    <br>│   │   ├── <span class="tree-file">dut_hac1_revA.yaml</span>
+    <br>│   │   ├── <span class="tree-file">dut_hac1_revB.yaml</span>
+    <br>│   │   └── <span class="tree-file">expected_devices.yaml</span>
+    <br>│   └── <span class="tree-file">reports/</span>  <span class="tree-comment">← CI artifact，不入 git</span>
+    <br>├── <span class="tree-dir">docs/</span>
+    <br>│   └── <span class="tree-dir">aspice/</span>
+    <br>│       ├── <span class="tree-file">board_difference_matrix.md</span>
+    <br>│       ├── <span class="tree-file">sdk_reuse_inventory.md</span>
+    <br>│       ├── <span class="tree-file">interface_control_document.md</span>
+    <br>│       ├── <span class="tree-file">software_requirements.md</span>
+    <br>│       ├── <span class="tree-file">hil_test_specification.md</span>
+    <br>│       ├── <span class="tree-file">traceability_matrix.md</span>
+    <br>│       └── <span class="tree-file">release_gate_checklist.md</span>
+    <br>└── <span class="tree-dir">scripts/</span>
+    <br>     ├── <span class="tree-file">flash_image.sh</span>
+    <br>     ├── <span class="tree-file">collect_dut_info.sh</span>
+    <br>     └── <span class="tree-file">scan_dmesg.sh</span>
+  </div>
+</div>
+
+<!-- ═══ METADATA ═══ -->
+<div class="meta-strip">
+  <div class="meta-item"><span class="label">HIL 設備 MVP</span> Controller PC + USB-UART + Ethernet + relay + DUT</div>
+  <div class="meta-item"><span class="label">角色分工</span> BSP Owner + HIL Automation Owner</div>
+  <div class="meta-item"><span class="label">結論</span> HIL 先產生工程價值 → ASPICE 承接 HIL 輸出</div>
+</div>
+
+</div><!-- .page -->
+</body>
+</html>
